@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\talma\\Documents\\GitHub\\CSE-310-Projects\\HelloWorld\\HelloWorld.csproj": {}
+    "c:\\Users\\talma\\Documents\\GitHub\\CSE-310-Projects\\HelloWorld\\HelloWorld.csproj": {}
   },
   "projects": {
-    "C:\\Users\\talma\\Documents\\GitHub\\CSE-310-Projects\\HelloWorld\\HelloWorld.csproj": {
+    "c:\\Users\\talma\\Documents\\GitHub\\CSE-310-Projects\\HelloWorld\\HelloWorld.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\talma\\Documents\\GitHub\\CSE-310-Projects\\HelloWorld\\HelloWorld.csproj",
+        "projectUniqueName": "c:\\Users\\talma\\Documents\\GitHub\\CSE-310-Projects\\HelloWorld\\HelloWorld.csproj",
         "projectName": "HelloWorld",
-        "projectPath": "C:\\Users\\talma\\Documents\\GitHub\\CSE-310-Projects\\HelloWorld\\HelloWorld.csproj",
+        "projectPath": "c:\\Users\\talma\\Documents\\GitHub\\CSE-310-Projects\\HelloWorld\\HelloWorld.csproj",
         "packagesPath": "C:\\Users\\talma\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\talma\\Documents\\GitHub\\CSE-310-Projects\\HelloWorld\\obj\\",
+        "outputPath": "c:\\Users\\talma\\Documents\\GitHub\\CSE-310-Projects\\HelloWorld\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
