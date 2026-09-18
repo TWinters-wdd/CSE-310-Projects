@@ -1,26 +1,25 @@
-# Project Title (Update)
+# Hello World Software
 
-Add a description of your project here.
+My software will display the words, "Hello World!" to the console.
 
 ## Instructions for Build and Use
 
 Steps to build and/or run the software:
 
-1. First step here
-2.
-3.
+1. Create a Project in VSCode.
+2. Write a simple Console.WriteLine command.
+3. Run the project.
 
 Instructions for using the software:
 
-1. First step here
-2.
-3.
+1. Open the file in VSCode.
+2. Run the file.
 
 ## Development Environment
 
 To recreate the development environment, you need the following software and/or libraries with the specified versions:
 
-* First thing here
+* Latest Version of VSCode
 *
 *
 
@@ -28,14 +27,10 @@ To recreate the development environment, you need the following software and/or 
 
 I found these websites useful in developing this software:
 
-* [Website Title](Link)
-*
-*
+* www.w3schools.com
 
 ## Future Work
 
 The following items I plan to fix, improve, and/or add to this project in the future:
 
-* [ ] First thing here
-* [ ]
-* [ ]
+* I am not planning to improve/add anything to this project in the future because it is so simple.
