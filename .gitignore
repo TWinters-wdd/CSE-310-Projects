@@ -455,3 +455,5 @@ $RECYCLE.BIN/
 !.vscode/launch.json
 !.vscode/extensions.json
 HelloWorld/obj/Debug/net10.0/HelloWorld.AssemblyInfoInputs.cache
+HelloWorld/obj/Debug/net10.0/HelloWorld.AssemblyInfoInputs.cache
+HelloWorld/obj/Debug/net10.0/HelloWorld.AssemblyInfo.cs
