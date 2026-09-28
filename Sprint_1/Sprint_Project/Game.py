@@ -16,6 +16,7 @@ logic.
 from __future__ import annotations
 
 import random
+from pathlib import Path
 from typing import Optional
 
 import arcade
@@ -29,6 +30,17 @@ PLAYER_Y = 125
 BACKGROUND_SPEED = 160
 ENEMY_SPEED = 100
 SPAWN_INTERVAL = 1.15
+HERO_SCALE = 2.2
+HERO_FRAME_SIZE = 64
+HERO_ATTACK_TIME = 0.42
+
+HERO_SPRITE_DIR = (
+    Path(__file__).resolve().parent
+    / "Images"
+    / "PNG"
+    / "Swordsman_lvl3"
+    / "With_shadow"
+)
 
 
 class Enemy(arcade.SpriteSolidColor):
@@ -45,11 +57,100 @@ class Enemy(arcade.SpriteSolidColor):
         self.speed = ENEMY_SPEED + random.randint(-15, 25)
 
 
+class HeroPlayer(arcade.Sprite):
+    """Animated level 3 swordsman used for the stationary player."""
+
+    # The PNG sprite sheets contain four 64-pixel rows. In the level 3 sheets
+    # the rows are front, left, right, and back, respectively. These rows give
+    # the player a matching view for each attack direction.
+    DIRECTION_ROWS = {
+        "left": 1,
+        "right": 2,
+        "top": 3,
+    }
+
+    SHEETS = {
+        "run": "Swordsman_lvl3_Run_with_shadow.png",
+        "attack": "Swordsman_lvl3_attack_with_shadow.png",
+        "hurt": "Swordsman_lvl3_Hurt_with_shadow.png",
+    }
+
+    def __init__(self) -> None:
+        animation_indices: dict[str, dict[str, list[int]]] = {}
+        all_textures = []
+
+        for animation_name, file_name in self.SHEETS.items():
+            sheet_path = HERO_SPRITE_DIR / file_name
+            sheet = arcade.load_spritesheet(sheet_path)
+            sheet_width, sheet_height = sheet.image.size
+            columns = sheet_width // HERO_FRAME_SIZE
+            rows = sheet_height // HERO_FRAME_SIZE
+            sheet_textures = sheet.get_texture_grid(
+                (HERO_FRAME_SIZE, HERO_FRAME_SIZE),
+                columns,
+                columns * rows,
+            )
+
+            animation_indices[animation_name] = {}
+            for direction, row in self.DIRECTION_ROWS.items():
+                first_frame = row * columns
+                frames = sheet_textures[first_frame : first_frame + columns]
+                animation_indices[animation_name][direction] = []
+                for texture in frames:
+                    animation_indices[animation_name][direction].append(
+                        len(all_textures)
+                    )
+                    all_textures.append(texture)
+
+        super().__init__(all_textures[0], scale=HERO_SCALE)
+        for texture in all_textures[1:]:
+            self.append_texture(texture)
+
+        self.animation_indices = animation_indices
+        self.state = "run"
+        self.direction = "right"
+        self.animation_time = 0.0
+
+    def start_attack(self, direction: str) -> None:
+        """Start a one-shot attack animation in the requested direction."""
+        self.direction = direction
+        self.state = "attack"
+        self.animation_time = 0.0
+
+    def start_hurt(self) -> None:
+        """Play the damage-taken animation, then return to running."""
+        self.state = "hurt"
+        self.animation_time = 0.0
+
+    def update_animation(self, delta_time: float) -> None:
+        self.animation_time += delta_time
+
+        if self.state == "attack" and self.animation_time >= HERO_ATTACK_TIME:
+            self.state = "run"
+            self.animation_time = 0.0
+        elif self.state == "hurt" and self.animation_time >= 0.35:
+            self.state = "run"
+            self.animation_time = 0.0
+
+        frame_time = {
+            "run": 0.09,
+            "attack": HERO_ATTACK_TIME / 8,
+            "hurt": 0.08,
+        }[self.state]
+        frames = self.animation_indices[self.state][self.direction]
+        frame_number = int(self.animation_time / frame_time)
+        if self.state == "run":
+            frame_number %= len(frames)
+        else:
+            frame_number = min(frame_number, len(frames) - 1)
+        self.set_texture(frames[frame_number])
+
+
 class GameView(arcade.View):
     def __init__(self) -> None:
         super().__init__()
 
-        self.player: arcade.SpriteSolidColor
+        self.player: HeroPlayer
         self.player_list = arcade.SpriteList()
         self.enemies = arcade.SpriteList()
         self.sun: arcade.SpriteCircle
@@ -74,12 +175,12 @@ class GameView(arcade.View):
         self.setup()
 
     def setup(self) -> None:
-        """Create the player, the immovable obstacle, and the first enemies."""
+        """Create the animated player, fixed sun, and enemy list."""
         self.enemies = arcade.SpriteList()
         self.sun_list = arcade.SpriteList()
         self.player_list = arcade.SpriteList()
 
-        self.player = arcade.SpriteSolidColor(42, 54, arcade.color.AO)
+        self.player = HeroPlayer()
         self.player.center_x = SCREEN_WIDTH / 2
         self.player.center_y = PLAYER_Y
         self.player_list.append(self.player)
@@ -208,7 +309,8 @@ class GameView(arcade.View):
 
     def attack(self, direction: str) -> None:
         self.attack_direction = direction
-        self.attack_timer = 0.22
+        self.attack_timer = HERO_ATTACK_TIME
+        self.player.start_attack(direction)
 
     def check_attack_collisions(self) -> None:
         if not self.attack_direction or self.attack_timer <= 0:
@@ -230,6 +332,8 @@ class GameView(arcade.View):
                     arcade.play_sound(self.kill_sound)
 
     def on_update(self, delta_time: float) -> None:
+        self.player.update_animation(delta_time)
+
         if self.game_over:
             return
 
@@ -265,6 +369,9 @@ class GameView(arcade.View):
             if arcade.check_for_collision(self.player, enemy):
                 enemy.remove_from_sprite_lists()
                 self.lives -= 1
+                self.attack_direction = None
+                self.attack_timer = 0.0
+                self.player.start_hurt()
                 if self.lives <= 0:
                     self.game_over = True
 
