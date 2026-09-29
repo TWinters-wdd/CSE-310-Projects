@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Optional
 
 import arcade
+from PIL import Image, ImageDraw
 
 
 SCREEN_WIDTH = 1000
@@ -43,16 +44,48 @@ HERO_SPRITE_DIR = (
 )
 
 
-class Enemy(arcade.SpriteSolidColor):
-    """A simple enemy that remembers which attack can defeat it."""
+class Enemy(arcade.Sprite):
+    """A shape-based enemy that remembers which attack defeats it."""
+
+    _textures: dict[str, arcade.Texture] = {}
+
+    @classmethod
+    def get_texture_for_side(cls, side: str) -> arcade.Texture:
+        if side in cls._textures:
+            return cls._textures[side]
+
+        if side == "left":
+            # Red square for an enemy attacking from the left.
+            texture = arcade.make_soft_square_texture(
+                44,
+                arcade.color.RED,
+                center_alpha=255,
+                outer_alpha=255,
+                name="left_enemy_square",
+            )
+        elif side == "right":
+            # Blue circle for an enemy attacking from the right.
+            texture = arcade.make_circle_texture(
+                44,
+                arcade.color.BLUE,
+                name="right_enemy_circle",
+            )
+        else:
+            # Yellow triangle with its point at the bottom, aimed at the
+            # player when the enemy approaches from above.
+            image = Image.new("RGBA", (44, 44), (0, 0, 0, 0))
+            draw = ImageDraw.Draw(image)
+            draw.polygon(
+                ((4, 4), (40, 4), (22, 40)),
+                fill=arcade.color.YELLOW,
+            )
+            texture = arcade.Texture(image)
+
+        cls._textures[side] = texture
+        return texture
 
     def __init__(self, side: str) -> None:
-        colors = {
-            "left": arcade.color.ORANGE_RED,
-            "top": arcade.color.PURPLE,
-            "right": arcade.color.DARK_ORANGE,
-        }
-        super().__init__(34, 34, colors[side])
+        super().__init__(self.get_texture_for_side(side))
         self.side = side
         self.speed = ENEMY_SPEED + random.randint(-15, 25)
 
