@@ -280,17 +280,17 @@ class GameView(arcade.View):
         self.enemies.draw()
         self.player_list.draw()
 
-        # Draw a short attack indicator while an attack is active.
-        if self.attack_timer > 0 and self.attack_direction:
-            left, bottom, width, height = self.get_attack_box()
-            arcade.draw_lbwh_rectangle_outline(
-                left,
-                bottom,
-                width,
-                height,
-                arcade.color.YELLOW,
-                4,
-            )
+        # Draw a short attack indicator while an attack is active. (Only for testing purposes)
+        # if self.attack_timer > 0 and self.attack_direction:
+        #     left, bottom, width, height = self.get_attack_box()
+        #     arcade.draw_lbwh_rectangle_outline(
+        #         left,
+        #         bottom,
+        #         width,
+        #         height,
+        #         arcade.color.YELLOW,
+        #         4,
+        #     )
 
         arcade.draw_text(
             f"Score: {self.score}    Lives: {self.lives}",
