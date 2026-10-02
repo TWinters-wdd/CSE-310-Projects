@@ -8,9 +8,8 @@ matching key to attack:
     A = attack an enemy coming from the left
     D = attack an enemy coming from the right
 
-The colored rectangles are Arcade sprites. They are intentionally simple so
-that they can be replaced with image files later without changing the game
-logic.
+The enemies use simple shape sprites. The player uses the CC0 Ninja.png
+sprite sheet in the Images folder.
 """
 
 from __future__ import annotations
@@ -31,17 +30,14 @@ PLAYER_Y = 125
 BACKGROUND_SPEED = 160
 ENEMY_SPEED = 100
 SPAWN_INTERVAL = 1.15
-HERO_SCALE = 2.2
-HERO_FRAME_SIZE = 64
-HERO_ATTACK_TIME = 0.42
-
-HERO_SPRITE_DIR = (
-    Path(__file__).resolve().parent
-    / "Images"
-    / "PNG"
-    / "Swordsman_lvl3"
-    / "With_shadow"
-)
+NINJA_IMAGE_PATH = Path(__file__).resolve().parent / "Images" / "Ninja.png"
+NINJA_FRAME_WIDTH = 41
+NINJA_FRAME_HEIGHT = 30
+NINJA_COLUMNS = 6
+NINJA_ROWS = 6
+NINJA_SCALE = 3.0
+HERO_ATTACK_TIME = 0.36
+HERO_HURT_TIME = 0.35
 
 
 class Enemy(arcade.Sprite):
@@ -91,86 +87,123 @@ class Enemy(arcade.Sprite):
 
 
 class HeroPlayer(arcade.Sprite):
-    """Animated level 3 swordsman used for the stationary player."""
+    """Animated ninja made from the irregular grid in Images/Ninja.png."""
 
-    # The PNG sprite sheets contain four 64-pixel rows. In the level 3 sheets
-    # the rows are front, left, right, and back, respectively. These rows give
-    # the player a matching view for each attack direction.
-    DIRECTION_ROWS = {
-        "left": 1,
-        "right": 2,
-        "top": 3,
-    }
-
-    SHEETS = {
-        "run": "Swordsman_lvl3_Run_with_shadow.png",
-        "attack": "Swordsman_lvl3_attack_with_shadow.png",
-        "hurt": "Swordsman_lvl3_Hurt_with_shadow.png",
-    }
+    # Ninja.png is a 6-by-6 sheet with 41x30 pixel cells. It does not contain
+    # a dedicated top-down attack, so the sword-swing frames are the closest
+    # match for the W attack.
+    RUN_CELLS = [(1, row) for row in range(6)]
+    SIDE_ATTACK_CELLS = [(2, row) for row in range(4)]
+    UP_ATTACK_CELLS = [(1, 3), (1, 4), (2, 0), (2, 3)]
 
     def __init__(self) -> None:
-        animation_indices: dict[str, dict[str, list[int]]] = {}
+        image = Image.open(NINJA_IMAGE_PATH).convert("RGBA")
+        cell_images = {}
+        for row in range(NINJA_ROWS):
+            for column in range(NINJA_COLUMNS):
+                left = column * NINJA_FRAME_WIDTH
+                top = row * NINJA_FRAME_HEIGHT
+                frame = image.crop(
+                    (left, top, left + NINJA_FRAME_WIDTH, top + NINJA_FRAME_HEIGHT)
+                )
+                self.remove_black_border(frame)
+                cell_images[(column, row)] = arcade.Texture(frame)
+
+        animation_images = {
+            "run": [cell_images[cell] for cell in self.RUN_CELLS],
+            "attack_right": [cell_images[cell] for cell in self.SIDE_ATTACK_CELLS],
+            "attack_top": [cell_images[cell] for cell in self.UP_ATTACK_CELLS],
+        }
+        animation_images["attack_left"] = [
+            texture.flip_left_right() for texture in animation_images["attack_right"]
+        ]
+        # The final column contains the sheet's wide-eyed damage pose.
+        animation_images["hurt"] = [cell_images[(5, 1)]]
+
+        animation_indices: dict[str, list[int]] = {}
         all_textures = []
+        for animation_name, textures in animation_images.items():
+            animation_indices[animation_name] = []
+            for texture in textures:
+                animation_indices[animation_name].append(len(all_textures))
+                all_textures.append(texture)
 
-        for animation_name, file_name in self.SHEETS.items():
-            sheet_path = HERO_SPRITE_DIR / file_name
-            sheet = arcade.load_spritesheet(sheet_path)
-            sheet_width, sheet_height = sheet.image.size
-            columns = sheet_width // HERO_FRAME_SIZE
-            rows = sheet_height // HERO_FRAME_SIZE
-            sheet_textures = sheet.get_texture_grid(
-                (HERO_FRAME_SIZE, HERO_FRAME_SIZE),
-                columns,
-                columns * rows,
-            )
-
-            animation_indices[animation_name] = {}
-            for direction, row in self.DIRECTION_ROWS.items():
-                first_frame = row * columns
-                frames = sheet_textures[first_frame : first_frame + columns]
-                animation_indices[animation_name][direction] = []
-                for texture in frames:
-                    animation_indices[animation_name][direction].append(
-                        len(all_textures)
-                    )
-                    all_textures.append(texture)
-
-        super().__init__(all_textures[0], scale=HERO_SCALE)
+        super().__init__(all_textures[0], scale=NINJA_SCALE)
         for texture in all_textures[1:]:
             self.append_texture(texture)
 
         self.animation_indices = animation_indices
         self.state = "run"
-        self.direction = "right"
         self.animation_time = 0.0
+        self.final_life = False
+        self.hurt_finished = False
+
+    @staticmethod
+    def remove_black_border(frame: Image.Image) -> None:
+        """Remove only black pixels connected to a cell edge.
+
+        The downloaded sheet has a black grid/background around its frames,
+        while some of the ninja's outlines are also black. Flood-filling from
+        the edge removes the background without erasing enclosed outlines.
+        """
+        pixels = frame.load()
+        pending = []
+        visited = set()
+        for x in range(frame.width):
+            pending.extend(((x, 0), (x, frame.height - 1)))
+        for y in range(frame.height):
+            pending.extend(((0, y), (frame.width - 1, y)))
+
+        while pending:
+            x, y = pending.pop()
+            if (x, y) in visited or not (0 <= x < frame.width and 0 <= y < frame.height):
+                continue
+            visited.add((x, y))
+            red, green, blue, alpha = pixels[x, y]
+            if alpha == 0 or (red, green, blue) != (0, 0, 0):
+                continue
+            pixels[x, y] = (0, 0, 0, 0)
+            pending.extend(((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)))
 
     def start_attack(self, direction: str) -> None:
-        """Start a one-shot attack animation in the requested direction."""
-        self.direction = direction
-        self.state = "attack"
+        """Start a directional attack, then return to right-facing running."""
+        if direction == "left":
+            self.state = "attack_left"
+        elif direction == "top":
+            self.state = "attack_top"
+        else:
+            self.state = "attack_right"
         self.animation_time = 0.0
 
-    def start_hurt(self) -> None:
-        """Play the damage-taken animation, then return to running."""
+    def start_hurt(self, final_life: bool = False) -> None:
         self.state = "hurt"
         self.animation_time = 0.0
+        self.final_life = final_life
+        self.hurt_finished = False
 
     def update_animation(self, delta_time: float) -> None:
         self.animation_time += delta_time
 
-        if self.state == "attack" and self.animation_time >= HERO_ATTACK_TIME:
+        if self.state.startswith("attack_") and self.animation_time >= HERO_ATTACK_TIME:
             self.state = "run"
             self.animation_time = 0.0
-        elif self.state == "hurt" and self.animation_time >= 0.35:
-            self.state = "run"
-            self.animation_time = 0.0
+        elif self.state == "hurt" and self.animation_time >= HERO_HURT_TIME:
+            if self.final_life:
+                # Keep the wide-eyed hurt pose visible when no lives remain.
+                self.animation_time = HERO_HURT_TIME
+                self.hurt_finished = True
+            else:
+                self.state = "run"
+                self.animation_time = 0.0
 
-        frame_time = {
-            "run": 0.09,
-            "attack": HERO_ATTACK_TIME / 8,
-            "hurt": 0.08,
-        }[self.state]
-        frames = self.animation_indices[self.state][self.direction]
+        if self.state == "run":
+            frame_time = 0.10
+        elif self.state == "hurt":
+            frame_time = HERO_HURT_TIME
+        else:
+            frame_time = HERO_ATTACK_TIME / len(self.animation_indices[self.state])
+
+        frames = self.animation_indices[self.state]
         frame_number = int(self.animation_time / frame_time)
         if self.state == "run":
             frame_number %= len(frames)
@@ -341,6 +374,8 @@ class GameView(arcade.View):
         return self.player.right, self.player.center_y - 36, 82, 72
 
     def attack(self, direction: str) -> None:
+        if self.player.state == "hurt":
+            return
         self.attack_direction = direction
         self.attack_timer = HERO_ATTACK_TIME
         self.player.start_attack(direction)
@@ -366,6 +401,9 @@ class GameView(arcade.View):
 
     def on_update(self, delta_time: float) -> None:
         self.player.update_animation(delta_time)
+
+        if self.player.hurt_finished:
+            self.game_over = True
 
         if self.game_over:
             return
@@ -398,15 +436,16 @@ class GameView(arcade.View):
         self.check_attack_collisions()
 
         # Collision between the player and each moving enemy.
-        for enemy in list(self.enemies):
-            if arcade.check_for_collision(self.player, enemy):
-                enemy.remove_from_sprite_lists()
-                self.lives -= 1
-                self.attack_direction = None
-                self.attack_timer = 0.0
-                self.player.start_hurt()
-                if self.lives <= 0:
-                    self.game_over = True
+        if self.player.state != "hurt":
+            for enemy in list(self.enemies):
+                if arcade.check_for_collision(self.player, enemy):
+                    enemy.remove_from_sprite_lists()
+                    final_life = self.lives == 1
+                    self.lives -= 1
+                    self.attack_direction = None
+                    self.attack_timer = 0.0
+                    self.player.start_hurt(final_life=final_life)
+                    break
 
         # Remove enemies that have drifted far off-screen.
         for enemy in list(self.enemies):
