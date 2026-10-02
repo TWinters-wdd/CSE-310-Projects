@@ -34,7 +34,7 @@ NINJA_IMAGE_PATH = Path(__file__).resolve().parent / "Images" / "Ninja.png"
 NINJA_FRAME_WIDTH = 41
 NINJA_FRAME_HEIGHT = 30
 NINJA_COLUMNS = 6
-NINJA_ROWS = 6
+NINJA_ROWS = 7
 NINJA_SCALE = 3.0
 HERO_ATTACK_TIME = 0.36
 HERO_HURT_TIME = 0.35
@@ -89,12 +89,11 @@ class Enemy(arcade.Sprite):
 class HeroPlayer(arcade.Sprite):
     """Animated ninja made from the irregular grid in Images/Ninja.png."""
 
-    # Ninja.png is a 6-by-6 sheet with 41x30 pixel cells. It does not contain
-    # a dedicated top-down attack, so the sword-swing frames are the closest
-    # match for the W attack.
+    # Ninja.png is a 6-by-7 sheet with 41x30 pixel cells. The final row is the
+    # dedicated upward sword attack used when the player presses W.
     RUN_CELLS = [(1, row) for row in range(6)]
     SIDE_ATTACK_CELLS = [(2, row) for row in range(4)]
-    UP_ATTACK_CELLS = [(1, 3), (1, 4), (2, 0), (2, 3)]
+    UP_ATTACK_CELLS = [(column, 6) for column in range(6)]
 
     def __init__(self) -> None:
         image = Image.open(NINJA_IMAGE_PATH).convert("RGBA")
