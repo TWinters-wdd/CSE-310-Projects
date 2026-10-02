@@ -11,3 +11,5 @@
 The Ninja sprite sheet is released under the Creative Commons CC0 license.
 Attribution is not required, but credit is provided here in appreciation of
 the creator's work.
+
+The original sprite sheet was modified for this project by adding an upward attack animation. (Last Row in `Sprint_Project/Images/Ninja.png`)
