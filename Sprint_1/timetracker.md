@@ -30,8 +30,9 @@ The expected minimum amount of time each Sprint for each category is as follows:
 |09/24/2026|   IM   |Continued following the Turtle Code Tutorial. Learned about basic shape drawing in Python Arcade. |    01:07    |
 |09/25/2026|   IM   |Continued the Turtle Code Tutorial. Learned about Sprites, SpriteLists, Input Handling, and Moving backgrounds.|    00:29   |
 |09/28/2026|   IM   |Generated a basic Python Arcade game with ChatGPT Codex. I also found a spritesheet I can use for my game.|  01:24 |
-|09/29/2026|   TP   |Worked on the Wireframe for the Map portion of our application. Asked Google Gemini about how we should code in React Native and TypeScript.|   00:21    |
+|09/29/2026|   TP   |Worked on the Wireframe for the Map portion of our application. Asked Google Gemini about how we should code in React Native and TypeScript.|   00:24    |
 |09/30/2026|   IM   |Filled out Documentation for Sprint 1 project and updated hours for team project and individual project|      01:06       |
+|10/02/2026|   TP   |Created a basic demonstration of our React Native Application. |   00:50     |
 
 _Note: Add more rows as needed._
 
@@ -40,6 +41,6 @@ _Note: Add more rows as needed._
 |Categroy                       |Total Time (Hours:Minutes)|
 |-------------------------------|:------------------------:|
 |IM - Individual Module         |                          |
-|TP - Team Project              |                          |
-|MTG - Class Meetings           |                          |
+|TP - Team Project              |         03:14            |
+|MTG - Class Meetings           |         04:00            |
 |**TOTAL**                      |                          |
