@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Optional
 
 import arcade
-from PIL import Image, ImageDraw
+from PIL import Image
 
 
 SCREEN_WIDTH = 1000
@@ -38,50 +38,40 @@ NINJA_ROWS = 7
 NINJA_SCALE = 3.0
 HERO_ATTACK_TIME = 0.36
 HERO_HURT_TIME = 0.35
+ENEMY_IMAGE_PATH = Path(__file__).resolve().parent / "Images" / "Enemy Sprites.png"
+ENEMY_SPRITE_SCALE = 2.0
 
 
 class Enemy(arcade.Sprite):
-    """A shape-based enemy that remembers which attack defeats it."""
+    """An image-based enemy that remembers which attack defeats it."""
 
     _textures: dict[str, arcade.Texture] = {}
+
+    # Bounding boxes for the three transparent sprites in Enemy Sprites.png.
+    # Coordinates are (left, top, right, bottom) in the 64x64 source image.
+    SPRITE_BOXES = {
+        "left": (39, 7, 56, 24),   # circle
+        "top": (2, 8, 31, 24),      # downward-pointing triangle
+        "right": (6, 38, 26, 57),   # square
+    }
 
     @classmethod
     def get_texture_for_side(cls, side: str) -> arcade.Texture:
         if side in cls._textures:
             return cls._textures[side]
 
-        if side == "left":
-            # Red square for an enemy attacking from the left.
-            texture = arcade.make_soft_square_texture(
-                44,
-                arcade.color.RED,
-                center_alpha=255,
-                outer_alpha=255,
-                name="left_enemy_square",
-            )
-        elif side == "right":
-            # Blue circle for an enemy attacking from the right.
-            texture = arcade.make_circle_texture(
-                44,
-                arcade.color.BLUE,
-                name="right_enemy_circle",
-            )
-        else:
-            # Yellow triangle with its point at the bottom, aimed at the
-            # player when the enemy approaches from above.
-            image = Image.new("RGBA", (44, 44), (0, 0, 0, 0))
-            draw = ImageDraw.Draw(image)
-            draw.polygon(
-                ((4, 4), (40, 4), (22, 40)),
-                fill=arcade.color.YELLOW,
-            )
-            texture = arcade.Texture(image)
+        if side not in cls.SPRITE_BOXES:
+            raise ValueError(f"Unknown enemy side: {side}")
+
+        sprite_sheet = Image.open(ENEMY_IMAGE_PATH).convert("RGBA")
+        texture_image = sprite_sheet.crop(cls.SPRITE_BOXES[side])
+        texture = arcade.Texture(texture_image)
 
         cls._textures[side] = texture
         return texture
 
     def __init__(self, side: str) -> None:
-        super().__init__(self.get_texture_for_side(side))
+        super().__init__(self.get_texture_for_side(side), scale=ENEMY_SPRITE_SCALE)
         self.side = side
         self.speed = ENEMY_SPEED + random.randint(-15, 25)
 
