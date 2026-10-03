@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Optional
 
 import arcade
-from PIL import Image
+from PIL import Image, ImageDraw
 
 
 SCREEN_WIDTH = 1000
@@ -40,6 +40,64 @@ HERO_ATTACK_TIME = 0.36
 HERO_HURT_TIME = 0.35
 ENEMY_IMAGE_PATH = Path(__file__).resolve().parent / "Images" / "Enemy Sprites.png"
 ENEMY_SPRITE_SCALE = 2.0
+MAX_LIVES = 3
+HEART_SIZE = 48
+HEART_SPACING = 52
+
+
+class LifeHeart(arcade.Sprite):
+    """A reusable filled or empty heart icon for the life display."""
+
+    _textures: dict[bool, arcade.Texture] = {}
+
+    @classmethod
+    def get_texture(cls, filled: bool) -> arcade.Texture:
+        if filled not in cls._textures:
+            image = Image.new("RGBA", (HEART_SIZE, HEART_SIZE), (0, 0, 0, 0))
+            draw = ImageDraw.Draw(image)
+
+            # Draw the outline once so empty hearts retain their black border.
+            outer_heart = [
+                (HEART_SIZE // 2, HEART_SIZE - 4),
+                (4, 25),
+                (4, 15),
+                (8, 8),
+                (15, 5),
+                (HEART_SIZE // 2, 14),
+                (33, 5),
+                (40, 8),
+                (44, 15),
+                (44, 25),
+            ]
+            draw.polygon(outer_heart, fill=(0, 0, 0, 255))
+
+            if filled:
+                inner_heart = [
+                    (HEART_SIZE // 2, 39),
+                    (9, 24),
+                    (9, 16),
+                    (12, 11),
+                    (18, 10),
+                    (HEART_SIZE // 2, 18),
+                    (30, 10),
+                    (36, 11),
+                    (39, 16),
+                    (39, 24),
+                ]
+                draw.polygon(inner_heart, fill=arcade.color.RED)
+
+            cls._textures[filled] = arcade.Texture(image)
+
+        return cls._textures[filled]
+
+    def __init__(self, filled: bool = True) -> None:
+        super().__init__(self.get_texture(filled))
+        self.filled = filled
+
+    def set_filled(self, filled: bool) -> None:
+        if self.filled != filled:
+            self.texture = self.get_texture(filled)
+            self.filled = filled
 
 
 class Enemy(arcade.Sprite):
@@ -210,6 +268,8 @@ class GameView(arcade.View):
         self.enemies = arcade.SpriteList()
         self.sun: arcade.SpriteCircle
         self.sun_list = arcade.SpriteList()
+        self.heart_list = arcade.SpriteList()
+        self.hearts: list[LifeHeart] = []
 
         self.score = 0
         self.lives = 3
@@ -218,6 +278,13 @@ class GameView(arcade.View):
         self.attack_direction: Optional[str] = None
         self.attack_timer = 0.0
         self.game_over = False
+        self.controls_text = arcade.Text(
+            "W: top attack     A: left attack     D: right attack",
+            20,
+            SCREEN_HEIGHT - 78,
+            arcade.color.WHITE,
+            16,
+        )
 
         # Arcade includes this sound in its built-in resources. If a very
         # old Arcade installation does not include it, the game still runs.
@@ -234,6 +301,8 @@ class GameView(arcade.View):
         self.enemies = arcade.SpriteList()
         self.sun_list = arcade.SpriteList()
         self.player_list = arcade.SpriteList()
+        self.heart_list = arcade.SpriteList()
+        self.hearts = []
 
         self.player = HeroPlayer()
         self.player.center_x = SCREEN_WIDTH / 2
@@ -248,12 +317,27 @@ class GameView(arcade.View):
         self.sun_list.append(self.sun)
 
         self.score = 0
-        self.lives = 3
+        self.lives = MAX_LIVES
+        self.create_life_hearts()
         self.spawn_timer = 0.0
         self.background_scroll = 0.0
         self.attack_direction = None
         self.attack_timer = 0.0
         self.game_over = False
+
+    def create_life_hearts(self) -> None:
+        """Create the three fixed heart icons used by the HUD."""
+        for index in range(MAX_LIVES):
+            heart = LifeHeart(filled=True)
+            heart.center_x = 155 + index * HEART_SPACING
+            heart.center_y = SCREEN_HEIGHT - 32
+            self.heart_list.append(heart)
+            self.hearts.append(heart)
+
+    def update_life_hearts(self) -> None:
+        """Keep the red fill in sync with the player's remaining lives."""
+        for index, heart in enumerate(self.hearts):
+            heart.set_filled(index < self.lives)
 
     def spawn_enemy(self) -> None:
         side = random.choice(("left", "top", "right"))
@@ -315,19 +399,14 @@ class GameView(arcade.View):
         #     )
 
         arcade.draw_text(
-            f"Score: {self.score}    Lives: {self.lives}",
+            f"Score: {self.score}",
             20,
             SCREEN_HEIGHT - 42,
             arcade.color.WHITE,
             20,
         )
-        arcade.draw_text(
-            "W: top attack     A: left attack     D: right attack",
-            20,
-            20,
-            arcade.color.WHITE,
-            16,
-        )
+        self.heart_list.draw()
+        self.controls_text.draw()
 
         if self.game_over:
             arcade.draw_lbwh_rectangle_filled(
@@ -431,6 +510,7 @@ class GameView(arcade.View):
                     enemy.remove_from_sprite_lists()
                     final_life = self.lives == 1
                     self.lives -= 1
+                    self.update_life_hearts()
                     self.attack_direction = None
                     self.attack_timer = 0.0
                     self.player.start_hurt(final_life=final_life)
