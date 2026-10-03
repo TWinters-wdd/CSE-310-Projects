@@ -33,6 +33,7 @@ The expected minimum amount of time each Sprint for each category is as follows:
 |09/29/2026|   TP   |Worked on the Wireframe for the Map portion of our application. Asked Google Gemini about how we should code in React Native and TypeScript.|   00:24    |
 |09/30/2026|   IM   |Filled out Documentation for Sprint 1 project and updated hours for team project and individual project|      01:06       |
 |10/02/2026|   TP   |Created a basic demonstration of our React Native Application. |   00:50     |
+|10/02/2026|   IM   |Found copyright free sprite for my game. Started to create a sprite sheet for the enemy sprites. |   01:59    |
 
 _Note: Add more rows as needed._
 
