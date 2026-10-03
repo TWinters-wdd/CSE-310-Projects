@@ -34,7 +34,7 @@ The expected minimum amount of time each Sprint for each category is as follows:
 |09/30/2026|   IM   |Filled out Documentation for Sprint 1 project and updated hours for team project and individual project|      01:06       |
 |10/02/2026|   TP   |Created a basic demonstration of our React Native Application. |   00:50     |
 |10/02/2026|   IM   |Found copyright free sprite for my game. Started to create a sprite sheet for the enemy sprites. |   01:59    |
-|10/03/2026|   IM   |
+|10/03/2026|   IM   |Did finishing touches on the game, updated enemy sprites, recorded the demonstration.|    01:05    |
 
 _Note: Add more rows as needed._
 
@@ -42,7 +42,7 @@ _Note: Add more rows as needed._
 
 |Categroy                       |Total Time (Hours:Minutes)|
 |-------------------------------|:------------------------:|
-|IM - Individual Module         |                          |
+|IM - Individual Module         |         09:10            |
 |TP - Team Project              |         03:14            |
 |MTG - Class Meetings           |         04:00            |
 |**TOTAL**                      |                          |
